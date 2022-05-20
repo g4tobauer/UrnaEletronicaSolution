@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using UIProject.classes;
 
@@ -13,10 +9,7 @@ namespace UIProject
     /// </summary>
     public partial class MainWindow : Window
     {
-        private readonly Queue<Sessao.Cargo> _filaCargos = new Queue<Sessao.Cargo>();
-        private readonly List<Sessao> _lstSessao = new List<Sessao>();
-
-        private Sessao _sessaoAtual;
+        private Votacao _votacaoAtual;
 
         public MainWindow()
         {
@@ -25,165 +18,78 @@ namespace UIProject
 
         private void Window_Initialized(object sender, System.EventArgs e)
         {
-            NovaSessao();
-        }
-
-        private void NovaSessao()
-        {
-            _lstSessao.Clear();
-            _filaCargos.Clear();
-            _filaCargos.Enqueue(Sessao.Cargo.DeputadoEstadual);
-            _filaCargos.Enqueue(Sessao.Cargo.DeputadoFederal);
-            _filaCargos.Enqueue(Sessao.Cargo.Governador);
-            _filaCargos.Enqueue(Sessao.Cargo.Senador);
-            _filaCargos.Enqueue(Sessao.Cargo.Presidente);
-            _sessaoAtual = new Sessao(_filaCargos.Dequeue());
-            Limpar();
+            NovaVotacao();
         }
 
         private void button_Click(object sender, RoutedEventArgs e)
         {
             var button = sender as Button;
             if (button == null) return;
-            ButtonManager(button);
+            GerenciadorDeTeclas(button);
         }
-        private void ButtonManager(Button button)
+
+        private void NovaVotacao()
         {
-            if (button == btn0)
-            {                
-                InputFormat("0");
-                return;
-            }
-            if (button == btn1)
-            {
-                InputFormat("1");
-                return;
-            }
-            if (button == btn2)
-            {
-                InputFormat("2");
-                return;
-            }
-            if (button == btn3)
-            {
-                InputFormat("3");
-                return;
-            }
-            if (button == btn4)
-            {
-                InputFormat("4");
-                return;
-            }
-            if (button == btn5)
-            {
-                InputFormat("5");
-                return;
-            }
-            if (button == btn6)
-            {
-                InputFormat("6");
-                return;
-            }
-            if (button == btn7)
-            {
-                InputFormat("7");
-                return;
-            }
-            if (button == btn8)
-            {
-                InputFormat("8");
-                return;
-            }
-            if (button == btn9)
-            {
-                InputFormat("9");
-                return;
-            }
-            if (button == btnBranco)
-            {
-                Branco();
-                return;
-            }
-            if (button == btnCorrige)
-            {
-                Limpar();
-                return;
-            }
-            if (button == btnConfirma)
-            {
-                Confirmar();
-                return;
-            }
+            _votacaoAtual = new Votacao();
+            Limpar();
         }
-        private void InputFormat(string value)
+        private void GerenciadorDeTeclas(Button button)
         {
-            _sessaoAtual.NumeroCandidato = string.Format("{0}{1}", _sessaoAtual.NumeroCandidato == null ? "" : _sessaoAtual.NumeroCandidato, value);
-            lblCandidateNumber.Content = _sessaoAtual.NumeroCandidato;
+            var strDigito = string.Empty;
+            if (button == btnBranco) Anular();
+            else
+            if (button == btnCorrige) Limpar();
+            else
+            if (button == btnConfirma) ConfirmarVotacao();
+            else
+            if (button == btn0) Digitar("0");
+            else
+            if (button == btn1) Digitar("1");
+            else
+            if (button == btn2) Digitar("2");
+            else
+            if (button == btn3) Digitar("3");
+            else
+            if (button == btn4) Digitar("4");
+            else
+            if (button == btn5) Digitar("5");
+            else
+            if (button == btn6) Digitar("6");
+            else
+            if (button == btn7) Digitar("7");
+            else
+            if (button == btn8) Digitar("8");
+            else
+            if (button == btn9) Digitar("9");
         }
-        private void Branco()
+        private void AtualizarNumeroCandidato()
+        {            
+            lblCandidateNumber.Content = _votacaoAtual.NumeroCandidatoAtual;
+        }
+        private void Digitar(string strDigito)
         {
-            _sessaoAtual.EBranco = true;
-            if (FinalizaSessao())
-            {
-                CommitSessao();
-                NovaSessao();
-            }
+            _votacaoAtual.InserirDigito(strDigito);
+            AtualizarNumeroCandidato();
         }
         private void Limpar()
         {
-            _sessaoAtual.NumeroCandidato = string.Empty;
-            InputFormat("");
+            _votacaoAtual.LimparVotacao();
+            AtualizarNumeroCandidato();
         }
-
-        private bool FinalizaSessao()
+        private void Anular()
         {
-            _lstSessao.Add(_sessaoAtual);
-            _sessaoAtual = null;
-            if (_filaCargos.Any())
+            _votacaoAtual.AnularVotacao();
+            AtualizarNumeroCandidato();
+        }
+        private void ConfirmarVotacao()
+        {
+            if (!_votacaoAtual.VotacaoFinalizada())
             {
-                _sessaoAtual = new Sessao(_filaCargos.Dequeue());
-                Limpar();
-                return false;
+                AtualizarNumeroCandidato();
+                return;
             }
-            return true;
-        }
-
-        private void Confirmar()
-        {
-            if(FinalizaSessao())
-            {
-                CommitSessao();
-                NovaSessao();
-            }
-        }
-
-        private void CommitSessao()
-        {
-            StringBuilder sb = new StringBuilder();
-            _lstSessao.ForEach(c =>
-            {
-                switch (c.TipoCargo)
-                {
-                    case Sessao.Cargo.DeputadoEstadual:
-                        sb.Append(string.Format("Deputado Estadual:{0}{1}{2}", c.NumeroCandidato, Environment.NewLine, Environment.NewLine));
-                        break;
-                    case Sessao.Cargo.DeputadoFederal:
-                        sb.Append(string.Format("Deputado Federal:{0}{1}{2}", c.NumeroCandidato, Environment.NewLine, Environment.NewLine));
-                        break;
-                    case Sessao.Cargo.Governador:
-                        sb.Append(string.Format("Governador:{0}{1}{2}", c.NumeroCandidato, Environment.NewLine, Environment.NewLine));
-                        break;
-                    case Sessao.Cargo.Senador:
-                        sb.Append(string.Format("Senador:{0}{1}{2}", c.NumeroCandidato, Environment.NewLine, Environment.NewLine));
-                        break;
-                    case Sessao.Cargo.Presidente:
-                        sb.Append(string.Format("Presidente:{0}{1}{2}", c.NumeroCandidato, Environment.NewLine, Environment.NewLine));
-                        break;
-                }
-
-            });
-
-            MessageBox.Show(sb.ToString());
+            _votacaoAtual.ConfirmaVotacao();
+            NovaVotacao();
         }
     }
 }
